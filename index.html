@@ -639,7 +639,7 @@
             trackMesh.receiveShadow = true;
             trackGroup.add(trackMesh);
 
-            // Red & White Apex Curbs / Barriers
+            // Red & White Apex Curbs / Barriers (Opaque)
             for (let i = 0; i < points.length; i += 2) {
                 const pt = points[i];
                 const tangent = curve.getTangentAt(i / points.length);
@@ -652,7 +652,9 @@
                     const isRed = (i / 2) % 2 === 0;
                     const barrierMat = new THREE.MeshStandardMaterial({
                         color: isRed ? 0xcc0000 : 0xeeeeee,
-                        roughness: 0.4
+                        roughness: 0.4,
+                        transparent: false,
+                        opacity: 1.0
                     });
                     const barrier = new THREE.Mesh(barrierGeo, barrierMat);
                     barrier.position.copy(pos);
@@ -901,7 +903,8 @@
 
                 // Physics Constants
                 this.mass = 1200; // kg
-                this.maxEngineTorque = 650; // Nm
+                // Adjusted engine torque to reach ~100 mph (44.7 m/s) in ~5.0s (a ≈ 8.94 m/s²)
+                this.maxEngineTorque = 4300; // Nm
                 this.maxSpeedMph = 110; // Cap ~ 100+ MPH fast speed
                 this.brakeForce = 1800;
                 this.handbrakeForce = 4000;
