@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Tunnel Runner</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050510;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            text-align: center;
+            display: none;
+        }
+
+        #game-over h1 {
+            font-size: 50px;
+            margin: 0;
+            color: #ff3366;
+            text-shadow: 0 0 20px #ff3366;
+        }
+
+        #game-over p {
+            font-size: 20px;
+            margin-top: 10px;
+            color: #aaa;
+        }
+
+        #restart-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+            transition: transform 0.2s;
+        }
+
+        #restart-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">Score: <span id="score">0</span></div>
+    
+    <div id="game-over">
+        <h1>GAME OVER</h1>
+        <p>Final Score: <span id="final-score">0</span></p>
+        <button id="restart-btn" onclick="resetGame()">PLAY AGAIN</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const finalScoreEl = document.getElementById('final-score');
+        const gameOverEl = document.getElementById('game-over');
+
+        // Screen setup
+        let width, height, fov;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            fov = height / 2; // Field of view
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Game state
+        let score = 0;
+        let speed = 12;
+        let isGameOver = false;
+        let keyState = { left: false, right: false };
+
+        // Player state
+        const player = {
+            x: 0,
+            y: -100,
+            width: 40,
+            height: 20,
+            speed: 15
+        };
+
+        // Track / Obstacles
+        const tunnelRadius = 300;
+        let obstacles = [];
+        let stars = [];
+
+        // Create initial background stars
+        for (let i = 0; i < 200; i++) {
+            stars.push({
+                x: (Math.random() - 0.5) * 3000,
+                y: (Math.random() - 0.5) * 3000,
+                z: Math.random() * 2000
+            });
+        }
+
+        // Event Listeners for Controls
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keyState.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keyState.right = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keyState.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keyState.right = false;
+        });
+
+        function spawnObstacle() {
+            // Random position along the track border
+            const angle = Math.random() * Math.PI * 2;
+            const distance = tunnelRadius - 30;
+            
+            obstacles.push({
+                x: Math.cos(angle) * distance,
+                y: Math.sin(angle) * distance,
+                z: 3000, // Spawn far away
+                size: 60 + Math.random() * 40
+            });
+        }
+
+        // 3D Perspective Projection
+        function project(x, y, z) {
+            const scale = fov / (fov + z);
+            return {
+                x: x * scale + width / 2,
+                y: y * scale + height / 2,
+                scale: scale
+            };
+        }
+
+        function resetGame() {
+            score = 0;
+            speed = 12;
+            obstacles = [];
+            player.x = 0;
+            isGameOver = false;
+            gameOverEl.style.display = 'none';
+            scoreEl.innerText = score;
+            requestAnimationFrame(gameLoop);
+        }
+
+        let obstacleTimer = 0;
+
+        function update() {
+            if (isGameOver) return;
+
+            score += 1;
+            speed += 0.002; // Gradually speed up
+            scoreEl.innerText = Math.floor(score / 5);
+
+            // Handle player movement
+            if (keyState.left && player.x > -tunnelRadius + 40) player.x -= player.speed;
+            if (keyState.right && player.x < tunnelRadius - 40) player.x += player.speed;
+
+            // Update stars
+            stars.forEach(star => {
+                star.z -= speed * 0.5;
+                if (star.z <= 0) star.z = 2000;
+            });
+
+            // Spawn obstacles
+            obstacleTimer++;
+            if (obstacleTimer > Math.max(10, 40 - Math.floor(speed))) {
+                spawnObstacle();
+                obstacleTimer = 0;
+            }
+
+            // Update obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                let obs = obstacles[i];
+                obs.z -= speed;
+
+                // Collision detection with player at z ~ 0
+                if (obs.z < 50 && obs.z > -50) {
+                    const dx = obs.x - player.x;
+                    const dy = obs.y - player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < obs.size / 2 + player.width / 2) {
+                        endGame();
+                    }
+                }
+
+                // Remove offscreen obstacles
+                if (obs.z < -fov) {
+                    obstacles.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            // Background
+            ctx.fillStyle = '#050510';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Stars
+            ctx.fillStyle = '#ffffff';
+            stars.forEach(star => {
+                const p = project(star.x, star.y, star.z);
+                if (p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height) {
+                    const size = Math.max(1, 2 * p.scale);
+                    ctx.fillRect(p.x, p.y, size, size);
+                }
+            });
+
+            // Draw 3D Tunnel Rings
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.15)';
+            ctx.lineWidth = 2;
+            for (let z = 100; z < 3000; z += 200) {
+                const p = project(0, 0, z);
+                const radius = tunnelRadius * p.scale;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Draw Obstacles
+            obstacles.forEach(obs => {
+                const p = project(obs.x, obs.y, obs.z);
+                const size = obs.size * p.scale;
+
+                ctx.fillStyle = '#ff3366';
+                ctx.shadowBlur = 15 * p.scale;
+                ctx.shadowColor = '#ff3366';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, size / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0; // reset shadow
+            });
+
+            // Draw Player Ship
+            const pShip = project(player.x, player.y, 0);
+            
+            ctx.fillStyle = '#00d2ff';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00d2ff';
+
+            // Draw Triangle Ship
+            ctx.beginPath();
+            ctx.moveTo(pShip.x, pShip.y - 15);
+            ctx.lineTo(pShip.x - player.width / 2, pShip.y + player.height / 2);
+            ctx.lineTo(pShip.x + player.width / 2, pShip.y + player.height / 2);
+            ctx.closePath();
+            ctx.fill();
+
+            // Ship Thruster Glow
+            ctx.fillStyle = '#ff9900';
+            ctx.beginPath();
+            ctx.arc(pShip.x, pShip.y + 12, 5 + Math.random() * 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.shadowBlur = 0; // reset shadow
+        }
+
+        function endGame() {
+            isGameOver = true;
+            finalScoreEl.innerText = Math.floor(score / 5);
+            gameOverEl.style.display = 'block';
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            if (!isGameOver) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Start game
+        gameLoop();
+    </script>
+</body>
+</html>
