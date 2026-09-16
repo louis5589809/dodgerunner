@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MORGATH II: THE REDEMPTION OF THE CASTLE - EXTENDED EDITION</title>
+    <title>MORGATH II: THE REDEMPTION OF THE CASTLE - ULTIMATE EXTENDED EDITION</title>
     <style>
         /* ==========================================================================
-           1. CORE VISUAL ENGINE & CRT OVERLAYS
+           1. CORE VISUAL ENGINE, UI STYLES, & CRT OVERLAYS
            ========================================================================== */
         * {
             box-sizing: border-box;
@@ -88,7 +88,7 @@
         }
 
         /* ==========================================================================
-           2. HEADS-UP DISPLAY (HUD)
+           2. HEADS-UP DISPLAY (HUD) & OVERLAYS
            ========================================================================== */
         #hud {
             position: absolute;
@@ -272,7 +272,7 @@
         }
 
         /* ==========================================================================
-           3. MODAL WINDOWS & MENU OVERLAYS
+           3. MODAL WINDOWS
            ========================================================================== */
         .modal {
             position: absolute;
@@ -413,7 +413,7 @@
 
     <script>
         /* ==========================================================================
-           CONFIG & GAME STATE
+           CONFIG & GAME STATE MANAGEMENT
            ========================================================================== */
         const CONFIG = {
             fov: 75,
@@ -443,7 +443,7 @@
         };
 
         /* ==========================================================================
-           AUDIO ENGINE
+           AUDIO SYNTHESIS ENGINE
            ========================================================================== */
         class AudioEngine {
             constructor() { 
@@ -528,7 +528,7 @@
         const audio = new AudioEngine();
 
         /* ==========================================================================
-           THREE.JS SETUP
+           THREE.JS RENDERER & SCENE SETUP
            ========================================================================== */
         const container = document.getElementById('viewport-container');
         const scene = new THREE.Scene();
@@ -551,7 +551,7 @@
         scene.add(moonLight);
 
         /* ==========================================================================
-           PLAYER & WEAPON CONTROLLER
+           PLAYER, ARMOR & WEAPON CONTROLLER
            ========================================================================== */
         const playerGroup = new THREE.Group();
         playerGroup.position.set(0, CONFIG.playerHeight, 30);
@@ -566,6 +566,20 @@
         const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.28, 0.95, 8), armorMat);
         torso.position.y = -0.55;
         knightModel.add(torso);
+
+        const headMat = new THREE.MeshStandardMaterial({ color: 0x22222a, roughness: 0.4 });
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), headMat);
+        head.position.y = 0.1;
+        knightModel.add(head);
+
+        const leftShoulder = new THREE.Mesh(new THREE.SphereGeometry(0.18, 6, 6), armorMat);
+        leftShoulder.position.set(-0.48, -0.2, 0);
+        knightModel.add(leftShoulder);
+
+        const rightShoulder = new THREE.Mesh(new THREE.SphereGeometry(0.18, 6, 6), armorMat);
+        rightShoulder.position.set(0.48, -0.2, 0);
+        knightModel.add(rightShoulder);
+
         playerGroup.add(knightModel);
 
         const swordGroup = new THREE.Group();
@@ -573,6 +587,15 @@
         const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.95, 0.02), bladeMat);
         blade.position.y = 0.48;
         swordGroup.add(blade);
+
+        const guard = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.04, 0.06), armorMat);
+        guard.position.y = 0.02;
+        swordGroup.add(guard);
+
+        const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 8), armorMat);
+        hilt.position.y = -0.1;
+        swordGroup.add(hilt);
+
         swordGroup.position.set(0.4, -0.3, -0.55);
         cameraContainer.add(swordGroup);
 
@@ -590,7 +613,7 @@
         updateCameraPerspective();
 
         /* ==========================================================================
-           COURTYARD & HIGHLIGHTED EXIT DOOR
+           COURTYARD ARCHITECTURE & HIGHLIGHTED DOOR
            ========================================================================== */
         const courtyardGroup = new THREE.Group();
         scene.add(courtyardGroup);
@@ -600,7 +623,30 @@
         courtyardFloor.rotation.x = -Math.PI / 2;
         courtyardGroup.add(courtyardFloor);
 
-        // Highlighted Door Assembly
+        // Surrounding Fortress Walls
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x15131a, roughness: 0.9 });
+        
+        const northWallLeft = new THREE.Mesh(new THREE.BoxGeometry(70, 18, 4), wallMat);
+        northWallLeft.position.set(-45, 9, -80);
+        courtyardGroup.add(northWallLeft);
+
+        const northWallRight = new THREE.Mesh(new THREE.BoxGeometry(70, 18, 4), wallMat);
+        northWallRight.position.set(45, 9, -80);
+        courtyardGroup.add(northWallRight);
+
+        const southWall = new THREE.Mesh(new THREE.BoxGeometry(160, 18, 4), wallMat);
+        southWall.position.set(0, 9, 80);
+        courtyardGroup.add(southWall);
+
+        const eastWall = new THREE.Mesh(new THREE.BoxGeometry(4, 18, 160), wallMat);
+        eastWall.position.set(80, 9, 0);
+        courtyardGroup.add(eastWall);
+
+        const westWall = new THREE.Mesh(new THREE.BoxGeometry(4, 18, 160), wallMat);
+        westWall.position.set(-80, 9, 0);
+        courtyardGroup.add(westWall);
+
+        // Highlighted Door Structure
         const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.9 });
         const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(14, 12, 2.5), doorFrameMat);
         doorFrame.position.set(0, 6, -79);
@@ -632,19 +678,23 @@
         roadTrack.position.y = 0.02;
         forestGroup.add(roadTrack);
 
-        // Dark Forest Trees
+        // Forest Trees
         const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x1f140e, roughness: 0.9 });
         const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x0a2212, roughness: 0.8 });
 
-        for (let i = 0; i < 180; i++) {
+        for (let i = 0; i < 240; i++) {
             const tree = new THREE.Group();
             const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 6, 6), treeTrunkMat);
             trunk.position.y = 3;
             tree.add(trunk);
 
-            const leaves = new THREE.Mesh(new THREE.ConeGeometry(2.5, 8, 6), treeLeavesMat);
-            leaves.position.y = 8;
-            tree.add(leaves);
+            const leaves1 = new THREE.Mesh(new THREE.ConeGeometry(2.5, 8, 6), treeLeavesMat);
+            leaves1.position.y = 8;
+            tree.add(leaves1);
+
+            const leaves2 = new THREE.Mesh(new THREE.ConeGeometry(2.0, 6, 6), treeLeavesMat);
+            leaves2.position.y = 10.5;
+            tree.add(leaves2);
 
             let sideX = (Math.random() > 0.5 ? 1 : -1) * (12 + Math.random() * 120);
             let posZ = -380 + Math.random() * 760;
@@ -653,7 +703,7 @@
         }
 
         /* ==========================================================================
-           80 MPH VEHICLE
+           80 MPH VEHICLE PROCEDURAL GEOMETRY
            ========================================================================== */
         const carGroup = new THREE.Group();
         carGroup.position.set(0, 1.0, 330);
@@ -663,6 +713,34 @@
         const carBody = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.1, 5.2), carBodyMat);
         carBody.position.y = 0.6;
         carGroup.add(carBody);
+
+        const cabinMat = new THREE.MeshStandardMaterial({ color: 0x08080c, metalness: 0.9, roughness: 0.1 });
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.8, 2.6), cabinMat);
+        cabin.position.set(0, 1.45, 0.2);
+        carGroup.add(cabin);
+
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 });
+        const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 16);
+
+        const wFL = new THREE.Mesh(wheelGeo, wheelMat);
+        wFL.rotation.z = Math.PI / 2;
+        wFL.position.set(-1.3, 0.4, -1.8);
+        carGroup.add(wFL);
+
+        const wFR = new THREE.Mesh(wheelGeo, wheelMat);
+        wFR.rotation.z = Math.PI / 2;
+        wFR.position.set(1.3, 0.4, -1.8);
+        carGroup.add(wFR);
+
+        const wRL = new THREE.Mesh(wheelGeo, wheelMat);
+        wRL.rotation.z = Math.PI / 2;
+        wRL.position.set(-1.3, 0.4, 1.8);
+        carGroup.add(wRL);
+
+        const wRR = new THREE.Mesh(wheelGeo, wheelMat);
+        wRR.rotation.z = Math.PI / 2;
+        wRR.position.set(1.3, 0.4, 1.8);
+        carGroup.add(wRR);
 
         const headL = new THREE.PointLight(0xff3311, 12.0, 70); headL.position.set(-0.9, 0.8, -2.7); carGroup.add(headL);
         const headR = new THREE.PointLight(0xff3311, 12.0, 70); headR.position.set(0.9, 0.8, -2.7); carGroup.add(headR);
@@ -678,6 +756,17 @@
         const castleFloor = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), stoneMat);
         castleFloor.rotation.x = -Math.PI / 2;
         castleGroup.add(castleFloor);
+
+        // Castle Outer Pillars
+        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x181520, roughness: 0.8 });
+        for (let px = -40; px <= 40; px += 20) {
+            for (let pz = -40; pz <= 40; pz += 20) {
+                if (px === 0 && pz === 0) continue;
+                const pillar = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 24, 8), pillarMat);
+                pillar.position.set(px, 12, pz);
+                castleGroup.add(pillar);
+            }
+        }
 
         // Missing Fragment Artifact
         const fragmentGroup = new THREE.Group();
@@ -709,8 +798,12 @@
                 const body = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.8, 8), enemyMat);
                 this.mesh.add(body);
 
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), enemyMat);
+                head.position.y = 1.1;
+                this.mesh.add(head);
+
                 const eyes = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.1), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-                eyes.position.set(0, 0.6, -0.2);
+                eyes.position.set(0, 1.15, -0.25);
                 this.mesh.add(eyes);
 
                 group.add(this.mesh);
@@ -763,13 +856,17 @@
         courtyardAnomalies.push(
             new Anomaly(courtyardGroup, -18, -20),
             new Anomaly(courtyardGroup, 18, -20),
-            new Anomaly(courtyardGroup, 0, -50)
+            new Anomaly(courtyardGroup, 0, -50),
+            new Anomaly(courtyardGroup, -25, -60),
+            new Anomaly(courtyardGroup, 25, -60)
         );
 
         castleAnomalies.push(
             new Anomaly(castleGroup, -15, -15),
             new Anomaly(castleGroup, 15, -15),
-            new Anomaly(castleGroup, 0, -28)
+            new Anomaly(castleGroup, 0, -28),
+            new Anomaly(castleGroup, -18, -35),
+            new Anomaly(castleGroup, 18, -35)
         );
 
         function checkPhaseProgress() {
@@ -806,7 +903,7 @@
         }
 
         /* ==========================================================================
-           CONTROLS & INPUT
+           CONTROLS & INPUT MANAGEMENT
            ========================================================================== */
         const keys = {};
         window.addEventListener('keydown', (e) => {
@@ -886,7 +983,7 @@
         }
 
         /* ==========================================================================
-           MAIN GAME LOOP
+           MAIN GAME LOOP & SCENE STATE UPDATE
            ========================================================================== */
         let lastTime = performance.now();
         function animate() {
@@ -897,9 +994,10 @@
             const delta = Math.min((now - lastTime) / 1000, 0.1);
             lastTime = now;
 
-            // Rotate Missing Fragment
+            // Rotate Missing Fragment Artifact
             if (fragmentGroup) {
                 fragmentGroup.rotation.y += 1.2 * delta;
+                fragmentGroup.position.y = 1.8 + Math.sin(now * 0.003) * 0.2;
             }
 
             if (!GAME.isBlocking && GAME.stamina < GAME.maxStamina) {
@@ -984,7 +1082,7 @@
                     }
                 }
 
-                // AI Update
+                // AI Updates
                 const activeAnomalies = GAME.phase === 'COURTYARD' ? courtyardAnomalies : (GAME.phase === 'CASTLE' ? castleAnomalies : []);
                 activeAnomalies.forEach(anomaly => anomaly.update(delta, playerGroup.position));
             }
@@ -993,7 +1091,7 @@
         }
 
         /* ==========================================================================
-           ENDGAME PROCEDURES
+           ENDGAME & UTILITY CONTROLLERS
            ========================================================================== */
         function triggerVictory() {
             GAME.active = false;
@@ -1029,6 +1127,92 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        /* ==========================================================================
+           EXTENDED ARCHITECTURAL DECOR & STRUCTURAL GEOMETRY
+           ========================================================================== */
+        for (let i = -60; i <= 60; i += 20) {
+            if (i === 0) continue;
+            const courtyardTorch = new THREE.PointLight(0xff7722, 1.5, 18);
+            courtyardTorch.position.set(i, 4, -78);
+            courtyardGroup.add(courtyardTorch);
+
+            const torchMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.2, 6), new THREE.MeshBasicMaterial({ color: 0x553311 }));
+            torchMesh.position.set(i, 3.5, -78.8);
+            courtyardGroup.add(torchMesh);
+        }
+
+        for (let cz = -350; cz <= 350; cz += 50) {
+            const sideLampL = new THREE.PointLight(0x2288ff, 0.8, 15);
+            sideLampL.position.set(-9, 2.5, cz);
+            forestGroup.add(sideLampL);
+
+            const sideLampR = new THREE.PointLight(0x2288ff, 0.8, 15);
+            sideLampR.position.set(9, 2.5, cz);
+            forestGroup.add(sideLampR);
+        }
+
+        // Castle Wall Perimeter
+        const castleWallNorth = new THREE.Mesh(new THREE.BoxGeometry(120, 28, 4), wallMat);
+        castleWallNorth.position.set(0, 14, -60);
+        castleGroup.add(castleWallNorth);
+
+        const castleWallSouth = new THREE.Mesh(new THREE.BoxGeometry(120, 28, 4), wallMat);
+        castleWallSouth.position.set(0, 14, 60);
+        castleGroup.add(castleWallSouth);
+
+        const castleWallEast = new THREE.Mesh(new THREE.BoxGeometry(4, 28, 120), wallMat);
+        castleWallEast.position.set(60, 14, 0);
+        castleGroup.add(castleWallEast);
+
+        const castleWallWest = new THREE.Mesh(new THREE.BoxGeometry(4, 28, 120), wallMat);
+        castleWallWest.position.set(-60, 14, 0);
+        castleGroup.add(castleWallWest);
+
+        /* ==========================================================================
+           ADDITIONAL STRUCTURAL PROCEDURAL DETAILS & ENVIRONMENT DATA
+           ========================================================================== */
+        // Additional courtyard detail structures
+        for (let x = -70; x <= 70; x += 35) {
+            for (let z = -70; z <= 70; z += 35) {
+                if (Math.abs(x) < 20 && Math.abs(z) < 20) continue;
+                const bench = new THREE.Mesh(new THREE.BoxGeometry(4, 1.2, 1.8), stoneMat);
+                bench.position.set(x, 0.6, z);
+                courtyardGroup.add(bench);
+            }
+        }
+
+        // Castle interior detail decorations
+        for (let pz = -50; pz <= 50; pz += 25) {
+            const cTorchL = new THREE.PointLight(0x00ffff, 2.0, 16);
+            cTorchL.position.set(-58, 6, pz);
+            castleGroup.add(cTorchL);
+
+            const cTorchR = new THREE.PointLight(0x00ffff, 2.0, 16);
+            cTorchR.position.set(58, 6, pz);
+            castleGroup.add(cTorchR);
+        }
+
+        // Additional Forest Ambient Mist Geometry Particles
+        const mistParticleCount = 150;
+        const mistGeo = new THREE.BufferGeometry();
+        const mistPos = new Float32Array(mistParticleCount * 3);
+
+        for (let p = 0; p < mistParticleCount * 3; p += 3) {
+            mistPos[p] = (Math.random() - 0.5) * 200;
+            mistPos[p + 1] = Math.random() * 5 + 0.5;
+            mistPos[p + 2] = (Math.random() - 0.5) * 700;
+        }
+
+        mistGeo.setAttribute('position', new THREE.BufferAttribute(mistPos, 3));
+        const mistMat = new THREE.PointsMaterial({
+            color: 0x4466aa,
+            size: 2.5,
+            transparent: true,
+            opacity: 0.25
+        });
+        const mistSystem = new THREE.Points(mistGeo, mistMat);
+        forestGroup.add(mistSystem);
     </script>
 </body>
 </html>
